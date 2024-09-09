@@ -1,0 +1,39 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "adminUsername": {
+        "value": "myAdminUser"
+      },
+      "authenticationType": {
+        "value": "password"
+      },
+      "adminPasswordOrKey": {
+        "value": "mySuperSecretPassword"
+      },
+      "virtualMachineBaseName": {
+        "value": "accvm"
+      },
+      "vmSize": {
+        "value": "Standard_DC2as_v5"
+      },
+      "osImageName": {
+        "value": "Windows 11 Enterprise 23H2 Gen 2"
+      },
+      "securityType": {
+        "value": "DiskWithVMGuestState"
+      },
+      "createBastionHost": {
+        "value": "yes"
+      },
+      "objectIDConfidentialOrchestrator": {
+        "value": "00000000-0000-0000-0000-000000000000"
+      },
+      "location": {
+        "value": "[resourceGroup().location]"
+      },
+      "timeUnique": {
+        "value": "[utcNow('hhmmss')]"
+      }
+    }
+  }
