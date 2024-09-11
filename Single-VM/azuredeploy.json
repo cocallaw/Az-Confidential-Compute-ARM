@@ -108,7 +108,7 @@
       "type": "string",
       "defaultValue": "[utcNow('hhmmss')]",
       "metadata": {
-        "description": "Using the current deployment time to generate unique string for resource naming suchas the Azure Key Vault name."
+        "description": "Using the current deployment time to generate unique string for resource naming such as the Azure Key Vault name."
       }
     }
   },
