@@ -207,7 +207,7 @@
         "storageProfile": {
           "imageReference": "[variables('imageReference')]",
           "osDisk": {
-           "name": "[concat(parameters('virtualMachineBaseName'), 'osdisk-01')]",
+            "name": "[concat(parameters('virtualMachineBaseName'), 'osdisk-01')]",
             "caching": "ReadWrite",
             "createOption": "FromImage",
             "managedDisk": {
@@ -274,13 +274,7 @@
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
           "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "6837210095306434195"
-            }
-          },
+          "metadata": {},
           "parameters": {
             "location": {
               "type": "string",
@@ -458,13 +452,7 @@
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
           "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "14690294672141555036"
-            }
-          },
+          "metadata": {},
           "parameters": {
             "virtualNetworkName": {
               "type": "string",
@@ -565,13 +553,7 @@
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
           "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "402942362263886048"
-            }
-          },
+          "metadata": {},
           "parameters": {
             "virtualNetworkName": {
               "type": "string",
