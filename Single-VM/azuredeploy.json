@@ -326,16 +326,17 @@
                 "enableRbacAuthorization": true,
                 "enableSoftDelete": true,
                 "enablePurgeProtection": true,
-                "enabledForDeployment": true,
+                "enabledForDeployment": false,
                 "enabledForDiskEncryption": true,
                 "enabledForTemplateDeployment": true,
+                "publicNetworkAccess": "Disabled",
                 "tenantId": "[subscription().tenantId]",
                 "sku": {
                   "name": "[variables('keyVaultSku')]",
                   "family": "A"
                 },
                 "networkAcls": {
-                  "defaultAction": "Allow",
+                  "defaultAction": "Deny",
                   "bypass": "AzureServices"
                 }
               }
