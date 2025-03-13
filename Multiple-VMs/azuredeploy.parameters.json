@@ -6,10 +6,10 @@
         "value": "myAdminUser"
       },
       "authenticationType": {
-        "value": "mySecurePassword"
+        "value": "password"
       },
       "adminPasswordOrKey": {
-        "value": null
+        "value": "mySecurePassword"
       },
       "virtualMachineBaseName": {
         "value": "accvm"

@@ -1,6 +1,7 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
+  "metadata": {},
   "parameters": {
     "adminUsername": {
       "type": "string",
@@ -20,7 +21,8 @@
       }
     },
     "adminPasswordOrKey": {
-      "type": "secureString",
+      "type": "securestring",
+      "defaultValue": "",
       "metadata": {
         "description": "Password or SSH key for the administrator account on the new VMs."
       }
@@ -36,8 +38,8 @@
     "numberOfACCVMs": {
       "type": "int",
       "defaultValue": 1,
-      "maxValue": 50,
       "minValue": 1,
+      "maxValue": 50,
       "metadata": {
         "description": "Number of Confidential VMs to deploy"
       }
@@ -51,21 +53,17 @@
         "Standard_DC8as_v5",
         "Standard_DC16as_v5",
         "Standard_DC32as_v5",
+        "Standard_DC48as_v5",
+        "Standard_DC64as_v5",
+        "Standard_DC96as_v5",
         "Standard_DC2ads_v5",
         "Standard_DC4ads_v5",
         "Standard_DC8ads_v5",
         "Standard_DC16ads_v5",
         "Standard_DC32ads_v5",
-        "Standard_DC2as_v6",
-        "Standard_DC4as_v6",
-        "Standard_DC8as_v6",
-        "Standard_DC16as_v6",
-        "Standard_DC32as_v6",
-        "Standard_DC2ads_v6",
-        "Standard_DC4ads_v6",
-        "Standard_DC8ads_v6",
-        "Standard_DC16ads_v6",
-        "Standard_DC32ads_v6"
+        "Standard_DC48ads_v5",
+        "Standard_DC64ads_v5",
+        "Standard_DC96ads_v5"
       ],
       "metadata": {
         "description": "Size of the VM to create."
@@ -75,7 +73,6 @@
       "type": "string",
       "defaultValue": "Windows 11 Enterprise 23H2 Gen 2",
       "allowedValues": [
-        "Windows 11 Enterprise 22H2 Gen 2",
         "Windows 11 Enterprise 23H2 Gen 2",
         "Windows Server 2022 Gen 2",
         "Windows Server 2019 Gen 2",
@@ -105,7 +102,7 @@
       ]
     },
     "objectIDConfidentialOrchestrator": {
-      "type": "secureString",
+      "type": "securestring",
       "metadata": {
         "description": "Object ID of the Confidential VM Orchestrator Service Principal"
       }
@@ -170,11 +167,11 @@
     },
     "isWindows": "[contains(parameters('osImageName'), 'Windows')]",
     "windowsConfiguration": {
-      "enableAutomaticUpdates": "true",
-      "provisionVmAgent": "true"
+      "enableAutomaticUpdates": true,
+      "provisionVMAgent": true
     },
     "linuxConfiguration": {
-      "disablePasswordAuthentication": "true",
+      "disablePasswordAuthentication": true,
       "ssh": {
         "publicKeys": [
           {
@@ -188,12 +185,12 @@
   "resources": [
     {
       "copy": {
-        "name": "virtualMachineBaseName_nic",
-        "count": "[length(range(0, parameters('numberOfACCVMs')))]"
+        "name": "virtualMachineBaseName_nic_0_numberOfACCVMs",
+        "count": "[length(range(0, length(range(0, parameters('numberOfACCVMs')))))]"
       },
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2019-02-01",
-      "name": "[format('{0}-nic-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[copyIndex()])]",
+      "name": "[format('{0}-nic-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[range(0, length(range(0, parameters('numberOfACCVMs'))))[copyIndex()]])]",
       "location": "[parameters('location')]",
       "properties": {
         "ipConfigurations": [
@@ -214,12 +211,12 @@
     },
     {
       "copy": {
-        "name": "virtualMachineBaseName_resource",
-        "count": "[length(range(0, parameters('numberOfACCVMs')))]"
+        "name": "virtualMachineBaseName_0_numberOfACCVMs",
+        "count": "[length(range(0, length(range(0, parameters('numberOfACCVMs')))))]"
       },
       "type": "Microsoft.Compute/virtualMachines",
       "apiVersion": "2021-11-01",
-      "name": "[format('{0}-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[copyIndex()])]",
+      "name": "[format('{0}-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[range(0, length(range(0, parameters('numberOfACCVMs'))))[copyIndex()]])]",
       "location": "[parameters('location')]",
       "properties": {
         "hardwareProfile": {
@@ -228,7 +225,7 @@
         "storageProfile": {
           "imageReference": "[variables('imageReference')]",
           "osDisk": {
-            "name": "[format('{0}-{1}-osdisk', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[copyIndex()])]",
+            "name": "[format('{0}-{1}-osdisk', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[range(0, length(range(0, parameters('numberOfACCVMs'))))[copyIndex()]])]",
             "caching": "ReadWrite",
             "createOption": "FromImage",
             "managedDisk": {
@@ -246,16 +243,16 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[copyIndex()]))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[range(0, length(range(0, parameters('numberOfACCVMs'))))[copyIndex()]]))]"
             }
           ]
         },
         "osProfile": {
-          "computerName": "[format('{0}-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[copyIndex()])]",
+          "computerName": "[format('{0}-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[range(0, length(range(0, parameters('numberOfACCVMs'))))[copyIndex()]])]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPasswordOrKey')]",
-          "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), json('null'), variables('linuxConfiguration'))]",
-          "windowsConfiguration": "[if(variables('isWindows'), variables('windowsConfiguration'), json('null'))]"
+          "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), null(), variables('linuxConfiguration'))]",
+          "windowsConfiguration": "[if(variables('isWindows'), variables('windowsConfiguration'), null())]"
         },
         "securityProfile": {
           "securityType": "ConfidentialVM",
@@ -266,12 +263,12 @@
         }
       },
       "dependsOn": [
-        "virtualMachineBaseName_nic"
+        "virtualMachineBaseName_nic_0_numberOfACCVMs"
       ]
     },
     {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
       "name": "DiskEncryption",
       "properties": {
         "expressionEvaluationOptions": {
@@ -318,7 +315,7 @@
               }
             },
             "objectIDConfidentialOrchestrator": {
-              "type": "secureString",
+              "type": "securestring",
               "metadata": {
                 "description": "Object ID of the Confidential VM Orchestrator Service Principal"
               }
@@ -366,7 +363,6 @@
               "type": "Microsoft.KeyVault/vaults/keys",
               "apiVersion": "2021-11-01-preview",
               "name": "[format('{0}/{1}', parameters('keyVaultName'), variables('keyName'))]",
-              "location": "[parameters('location')]",
               "properties": {
                 "attributes": {
                   "enabled": true,
@@ -405,8 +401,8 @@
                 "encryptionType": "ConfidentialVmEncryptedWithCustomerKey"
               },
               "dependsOn": [
-                "[resourceId('Microsoft.KeyVault/vaults/keys', parameters('keyVaultName'), variables('keyName'))]",
-                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]",
+                "[resourceId('Microsoft.KeyVault/vaults/keys', parameters('keyVaultName'), variables('keyName'))]"
               ]
             },
             {
@@ -420,8 +416,8 @@
                 "principalType": "ServicePrincipal"
               },
               "dependsOn": [
-                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]",
-                "[resourceId('Microsoft.Compute/diskEncryptionSets', parameters('diskEncryptSetName'))]"
+                "[resourceId('Microsoft.Compute/diskEncryptionSets', parameters('diskEncryptSetName'))]",
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
               ]
             },
             {
@@ -435,8 +431,8 @@
                 "principalType": "ServicePrincipal"
               },
               "dependsOn": [
-                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]",
-                "[resourceId('Microsoft.Compute/diskEncryptionSets', parameters('diskEncryptSetName'))]"
+                "[resourceId('Microsoft.Compute/diskEncryptionSets', parameters('diskEncryptSetName'))]",
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
               ]
             }
           ]
@@ -445,7 +441,7 @@
     },
     {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
       "name": "VNet",
       "properties": {
         "expressionEvaluationOptions": {
@@ -523,25 +519,24 @@
                     "properties": {
                       "addressPrefix": "[parameters('subnetRange')]",
                       "networkSecurityGroup": {
-                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat(parameters('subnetName'), '-nsg-01'))]"
+                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-nsg-01', parameters('subnetName')))]"
                       }
                     }
                   }
                 ]
               },
               "dependsOn": [
-                "[resourceId('Microsoft.Network/networkSecurityGroups', concat(parameters('subnetName'), '-nsg-01'))]"
+                "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-nsg-01', parameters('subnetName')))]"
               ]
             },
             {
               "type": "Microsoft.Network/networkSecurityGroups",
-              "name": "[concat(parameters('subnetName'), '-nsg-01')]",
-              "location": "[parameters('location')]",
               "apiVersion": "2020-05-01",
+              "name": "[format('{0}-nsg-01', parameters('subnetName'))]",
+              "location": "[parameters('location')]",
               "properties": {
                 "securityRules": []
-              },
-              "dependsOn": []
+              }
             }
           ]
         }
@@ -553,7 +548,7 @@
     {
       "condition": "[equals(parameters('createBastionHost'), 'yes')]",
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
       "name": "Bastion",
       "properties": {
         "expressionEvaluationOptions": {
@@ -663,7 +658,7 @@
                     "properties": {
                       "addressPrefix": "[parameters('subnetRange')]",
                       "networkSecurityGroup": {
-                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat(parameters('subnetName'), '-nsg-01'))]"
+                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-nsg-01', parameters('subnetName')))]"
                       }
                     }
                   },
@@ -672,21 +667,21 @@
                     "properties": {
                       "addressPrefix": "[parameters('bastionSubnetRange')]",
                       "networkSecurityGroup": {
-                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat(parameters('bastionSubnetName'), '-nsg-01'))]"
+                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-nsg-01', parameters('bastionSubnetName')))]"
                       }
                     }
                   }
                 ]
               },
               "dependsOn": [
-                "[resourceId('Microsoft.Network/networkSecurityGroups', concat(parameters('bastionSubnetName'), '-nsg-01'))]"
+                "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-nsg-01', parameters('bastionSubnetName')))]"
               ]
             },
             {
               "type": "Microsoft.Network/networkSecurityGroups",
-              "name": "[concat(parameters('bastionSubnetName'), '-nsg-01')]",
-              "location": "[parameters('location')]",
               "apiVersion": "2020-05-01",
+              "name": "[format('{0}-nsg-01', parameters('bastionSubnetName'))]",
+              "location": "[parameters('location')]",
               "properties": {
                 "securityRules": [
                   {
@@ -832,8 +827,7 @@
                     }
                   }
                 ]
-              },
-              "dependsOn": []
+              }
             },
             {
               "type": "Microsoft.Network/publicIPAddresses",
@@ -868,7 +862,7 @@
                 ]
               },
               "dependsOn": [
-                "[resourceId('Microsoft.Network/networkSecurityGroups', concat(parameters('bastionSubnetName'), '-nsg-01'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-nsg-01', parameters('bastionSubnetName')))]",
                 "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))]"
               ]
             }
