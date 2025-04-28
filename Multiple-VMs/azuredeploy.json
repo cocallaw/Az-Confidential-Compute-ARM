@@ -22,7 +22,6 @@
     },
     "adminPasswordOrKey": {
       "type": "securestring",
-      "defaultValue": "",
       "metadata": {
         "description": "Password or SSH key for the administrator account on the new VMs."
       }
@@ -32,7 +31,7 @@
       "defaultValue": "accvm",
       "maxLength": 10,
       "metadata": {
-        "description": "Virtual machine name, will be either incrimented or appended to for the creation of related supporting resources."
+        "description": "Virtual machine name, will be either incremented or appended to for the creation of related supporting resources."
       }
     },
     "numberOfACCVMs": {
@@ -107,18 +106,23 @@
         "description": "Object ID of the Confidential VM Orchestrator Service Principal"
       }
     },
+    "keyVaultName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Key Vault to be created."
+      }
+    },
+    "createKeyResources": {
+      "type": "bool",
+      "metadata": {
+        "description": "Indicates whether the disk encryption resources should be created."
+      }
+    },
     "location": {
       "type": "string",
       "defaultValue": "[resourceGroup().location]",
       "metadata": {
         "description": "Location for all resources, defaults to Resource Group location."
-      }
-    },
-    "timeUnique": {
-      "type": "string",
-      "defaultValue": "[utcNow('hhmmss')]",
-      "metadata": {
-        "description": "Using the current deployment time to generate unique string for resource naming such as the Azure Key Vault name."
       }
     }
   },
@@ -130,7 +134,6 @@
     "bastionHostName": "bastion-acc-lab-01",
     "bastionSubnetName": "AzureBastionSubnet",
     "bastionSubnetRange": "10.0.255.0/24",
-    "keyVaultName": "[format('AKV-{0}', uniqueString(resourceGroup().id, parameters('timeUnique')))]",
     "diskEncryptSetName": "DES-01",
     "imageReference": "[variables('imageList')[parameters('osImageName')]]",
     "imageList": {
@@ -185,12 +188,12 @@
   "resources": [
     {
       "copy": {
-        "name": "virtualMachineBaseName_nic_0_numberOfACCVMs",
-        "count": "[length(range(0, length(range(0, parameters('numberOfACCVMs')))))]"
+        "name": "NICs",
+        "count": "[length(range(0, parameters('numberOfACCVMs')))]"
       },
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2019-02-01",
-      "name": "[format('{0}-nic-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[range(0, length(range(0, parameters('numberOfACCVMs'))))[copyIndex()]])]",
+      "name": "[format('{0}-nic-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[copyIndex()])]",
       "location": "[parameters('location')]",
       "properties": {
         "ipConfigurations": [
@@ -206,17 +209,17 @@
         ]
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Resources/deployments', 'Bastion')]"
+        "[resourceId('Microsoft.Resources/deployments', 'VNet')]"
       ]
     },
     {
       "copy": {
-        "name": "virtualMachineBaseName_0_numberOfACCVMs",
-        "count": "[length(range(0, length(range(0, parameters('numberOfACCVMs')))))]"
+        "name": "ACCVMs",
+        "count": "[length(range(0, parameters('numberOfACCVMs')))]"
       },
       "type": "Microsoft.Compute/virtualMachines",
       "apiVersion": "2021-11-01",
-      "name": "[format('{0}-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[range(0, length(range(0, parameters('numberOfACCVMs'))))[copyIndex()]])]",
+      "name": "[format('{0}-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[copyIndex()])]",
       "location": "[parameters('location')]",
       "properties": {
         "hardwareProfile": {
@@ -225,7 +228,7 @@
         "storageProfile": {
           "imageReference": "[variables('imageReference')]",
           "osDisk": {
-            "name": "[format('{0}-{1}-osdisk', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[range(0, length(range(0, parameters('numberOfACCVMs'))))[copyIndex()]])]",
+            "name": "[format('{0}-{1}-osdisk', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[copyIndex()])]",
             "caching": "ReadWrite",
             "createOption": "FromImage",
             "managedDisk": {
@@ -243,12 +246,12 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[range(0, length(range(0, parameters('numberOfACCVMs'))))[copyIndex()]]))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[copyIndex()]))]"
             }
           ]
         },
         "osProfile": {
-          "computerName": "[format('{0}-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[range(0, length(range(0, parameters('numberOfACCVMs'))))[copyIndex()]])]",
+          "computerName": "[format('{0}-{1}', parameters('virtualMachineBaseName'), range(0, parameters('numberOfACCVMs'))[copyIndex()])]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPasswordOrKey')]",
           "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), null(), variables('linuxConfiguration'))]",
@@ -263,7 +266,7 @@
         }
       },
       "dependsOn": [
-        "virtualMachineBaseName_nic_0_numberOfACCVMs"
+        "NICs"
       ]
     },
     {
@@ -280,13 +283,16 @@
             "value": "[variables('diskEncryptSetName')]"
           },
           "keyVaultName": {
-            "value": "[variables('keyVaultName')]"
+            "value": "[parameters('keyVaultName')]"
           },
           "objectIDConfidentialOrchestrator": {
             "value": "[parameters('objectIDConfidentialOrchestrator')]"
           },
           "location": {
             "value": "[parameters('location')]"
+          },
+          "createKeyResources": {
+            "value": "[parameters('createKeyResources')]"
           }
         },
         "template": {
@@ -319,6 +325,12 @@
               "metadata": {
                 "description": "Object ID of the Confidential VM Orchestrator Service Principal"
               }
+            },
+            "createKeyResources": {
+              "type": "bool",
+              "metadata": {
+                "description": "Indicates whether the disk encryption resources should be created."
+              }
             }
           },
           "variables": {
@@ -336,6 +348,7 @@
           },
           "resources": [
             {
+              "condition": "[parameters('createKeyResources')]",
               "type": "Microsoft.KeyVault/vaults",
               "apiVersion": "2021-11-01-preview",
               "name": "[parameters('keyVaultName')]",
@@ -360,6 +373,7 @@
               }
             },
             {
+              "condition": "[parameters('createKeyResources')]",
               "type": "Microsoft.KeyVault/vaults/keys",
               "apiVersion": "2021-11-01-preview",
               "name": "[format('{0}/{1}', parameters('keyVaultName'), variables('keyName'))]",
@@ -384,6 +398,7 @@
               ]
             },
             {
+              "condition": "[parameters('createKeyResources')]",
               "type": "Microsoft.Compute/diskEncryptionSets",
               "apiVersion": "2021-12-01",
               "name": "[parameters('diskEncryptSetName')]",
@@ -406,6 +421,7 @@
               ]
             },
             {
+              "condition": "[parameters('createKeyResources')]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2020-04-01-preview",
               "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('keyVaultName'))]",
@@ -421,6 +437,7 @@
               ]
             },
             {
+              "condition": "[parameters('createKeyResources')]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2020-04-01-preview",
               "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('keyVaultName'))]",
